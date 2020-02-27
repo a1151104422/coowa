@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.demo.dao.AddressMapper">
+
+    <sql id="columns">
+        id,
+        userid,
+        receiver,
+        telephone,
+        province,
+        city,
+        zone,
+        detail,
+        status
+    </sql>
+
+    <sql id="wheres">
+        <if test="id != null and id != ''"> and id = #{id} </if>
+        <if test="userid != null and userid != ''"> and userid = #{userid} </if>
+        <if test="receiver != null and receiver != ''"> and receiver like CONCAT('%', #{receiver}, '%') </if>
+        <if test="telephone != null and telephone != ''"> and telephone like CONCAT('%', #{telephone}, '%') </if>
+        <if test="province != null and province != ''"> and province = #{province} </if>
+        <if test="city != null and city != ''"> and city = #{city} </if>
+        <if test="zone != null and zone != ''"> and zone = #{zone} </if>
+        <if test="detail != null and detail != ''"> and detail like CONCAT('%', #{detail}, '%') </if>
+        <if test="status != null and status != ''"> and status = #{status} </if>
+    </sql>
+
+    <select id="list" parameterType="map" resultType="com.example.demo.model.Address">
+        select
+        <include refid="columns"/>
+        from address
+        <where>
+            <include refid="wheres"/>
+        </where>
+        <choose>
+            <when test="sort != null and sort.trim() != ''">
+                order by ${sort} ${order}
+            </when>
+            <otherwise>
+                order by id desc
+            </otherwise>
+        </choose>
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="count" parameterType="map" resultType="int">
+        select count(*) from address
+        <where>
+            <include refid="wheres"/>
+        </where>
+    </select>
+
+    <delete id="delete">
+        DELETE FROM address WHERE id = #{id}
+    </delete>
+</mapper>

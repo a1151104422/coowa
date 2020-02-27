@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<link>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>Document</title>
+<link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+<div class="container">
+    <div class="form-group">
+        <label class="text-primary">信息复制到大文本框</label>
+        <textarea id="info" class="form-control" style="width: 100%; height: 150px;"></textarea>
+    </div>
+    <div style="height: 100px; overflow: hidden">
+        <div class="alert alert-success hidden" role="alert">操作成功。</div>
+        <div class="alert alert-danger hidden" role="alert"></div>
+    </div>
+    <form action="#">
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="form-group">
+                    <label>姓名</label>
+                    <input id="input0" name="receiver" class="form-control"/>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="form-group">
+                    <label>电话</label>
+                    <input id="input3" name="telephone" class="form-control"/>
+                </div>
+            </div>
+        </div>
+        <!-- <div class="form-group">
+            <label>编码</label>
+            <input id="zipcode" class="form-control" />
+        </div> -->
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="form-group">
+                    <label>省</label>
+                    <select id="prov" name="province" class="form-control"></select>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="form-group">
+                    <label>市</label>
+                    <select id="city" name="city" class="form-control"></select>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="form-group">
+                    <label>区/县</label>
+                    <select id="country" name="zone" class="form-control"></select>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>收货地址</label>
+            <input id="input1" name="detail" class="form-control"/>
+        </div>
+        <button type="button" class="btn btn-default">Submit</button>
+
+        <p class="text-primary pull-right"><a href="/address/list">地址列表-></a></p>
+    </form>
+</div>
+</body>
+<script src="https://cdn.bootcss.com/jquery/1.10.1/jquery.min.js"></script>
+<!--<script th:src="@{~/map.js}"></script>-->
+<script src="http://114.55.249.229/map.js"></script>
+<script>
+    var replaceWord = [
+        "修改",
+        "添加",
+        "删除",
+    ];
+    var replaceSymbol = [
+        { unneed: "：", need: ":" },
+        { unneed: "： ", need: ":" },
+        { unneed: ": ", need: ":" },
+    ];
+
+    $(function () {
+        var aid = getUrlParam("id") || "";
+        console.log(aid);
+
+        if (aid) {
+            $.post("/address/detail", {id: aid}, function (d, s) {
+                if (!d.code) {
+                    $("#input0").val(d.data.receiver);
+                    $("#input3").val(d.data.telephone);
+                    buildPcc(d.data.province + " " + d.data.city + " " + d.data.zone + " " + d.data.detail);
+                } else {
+                    alert(d.message);
+                }
+            });
+        }
+
+        $.each(provice, function (i, o) {
+            var provOpt = document.createElement('option');
+            provOpt.innerText = provice[i]['name'];
+            provOpt.value = provice[i]['name'];
+            $("#prov").append(provOpt);
+        });
+
+        $("#prov").change(function () {
+            $("#city").empty();
+            $("#country").empty();
+
+            buildCity(provice[$(this)[0].selectedIndex].city);
+        });
+
+        $("#city").change(function () {
+            $("#country").empty();
+            buildCountry($(this)[0].selectedIndex);
+        })
+
+        $("#info").keyup(function () {
+            var info = $("#info").val() || "";
+            if (info) {
+                info = replace(info);
+
+                $.each(info.split('\n'), function (i, n) {
+                    var tmp = n.split(":");
+                    if (tmp && tmp.length > 0) {
+                        if (i == 1) {
+                            buildPcc(tmp[1]);
+                        } else {
+                            $("#input" + i).val(tmp[1]);
+                        }
+                    }
+                });
+            }
+        });
+
+        $("button").click(function () {
+            $("button").attr("disabled", "disabled");
+            var data = {
+                id: aid,
+                receiver: $("#input0").val(),
+                telephone: $("#input3").val(),
+                province: $("#prov").val(),
+                city: $("#city").val(),
+                zone: $("#country").val(),
+                detail: $("#input1").val(),
+            }
+
+            $.post("/save", data, function (d, s) {
+                $(".alert").addClass("hidden");
+
+                if (!d.code) {
+                    $("form")[0].reset();
+                    $("#info").val("");
+
+                    $(".alert-success").removeClass("hidden");
+                } else {
+                    $(".alert-danger").html(d.message);
+                    $(".alert-danger").removeClass("hidden");
+                }
+
+                $("button").removeAttr("disabled");
+            });
+        });
+    });
+
+    var currentCity;
+
+    function buildCity(city) {
+        currentCity = city;
+        $.each(city, function (ii, oo) {
+            var cityOpt = document.createElement('option');
+            cityOpt.innerText = oo.name;
+            cityOpt.value = oo.name;
+            $("#city").append(cityOpt);
+
+            if (ii == 0) {
+                buildCountry(ii);
+            }
+        });
+    }
+
+    function buildCountry(idx) {
+        $.each(currentCity[idx].districtAndCounty, function (di, dn) {
+            var countryOpt = document.createElement('option');
+            countryOpt.innerText = dn;
+            countryOpt.value = dn;
+            $("#country").append(countryOpt);
+        });
+    }
+
+    function buildPcc(address) {
+        var addr = address.split(" ");
+
+        if (addr && addr.length > 3) {
+            $("#input1").val("");
+
+            var provStr = addr[0];
+            var cityStr = addr[1];
+            var countryStr = addr[2];
+
+            $.each(addr, function (i, o) {
+                if (i > 2) {
+                    $("#input1").val($("#input1").val() + addr[i]);
+                }
+            });
+
+            $.each(provice, function (i, o) {
+                if (provStr == o.name) {
+                    currentCity = o.city;
+                    $("#city").empty();
+                    $.each(o.city, function (ii, oo) {
+                        var cityOpt = document.createElement('option');
+                        cityOpt.innerText = oo.name;
+                        cityOpt.value = oo.name;
+                        $("#city").append(cityOpt);
+
+                        if (cityStr == oo.name) {
+                            $("#country").empty();
+                            $.each(oo.districtAndCounty, function (di, dn) {
+                                var countryOpt = document.createElement('option');
+                                countryOpt.innerText = dn;
+                                countryOpt.value = dn;
+                                $("#country").append(countryOpt);
+                            });
+                            $("#country").val(countryStr);
+                        }
+                    });
+
+                    $("#city").val(cityStr);
+                }
+            });
+
+            $("#prov").val(provStr);
+        }
+    }
+
+    function replace(info) {
+        if (info) {
+            $.each(replaceWord, function (i, n) {
+                info = info.replace(new RegExp(n, 'g'), "");
+            });
+            $.each(replaceSymbol, function (i, n) {
+                info = info.replace(new RegExp(n.unneed, 'g'), n.need);
+            });
+        }
+        return info;
+    }
+
+    function getUrlParam(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null) return unescape(r[2]);
+        return null;
+    }
+</script>
+
+</html>

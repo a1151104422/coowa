@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<link>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>Document</title>
+<link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" th:href="@{~/bootstrap-table.min.css}">
+<style>
+    @page {
+        margin: 0 0 0px 19px;
+    }
+
+    #printTemplate {
+        font-size: 12px;
+        padding-bottom: 3px;
+        padding-top: 3px;
+    }
+
+    p {
+        margin-bottom: 0px;
+    }
+
+    h3, h4, h5 {
+        margin: 0;
+    }
+
+    .print-line {
+        border-top: 1px solid #000;
+        margin: 5px auto;
+    }
+
+    .print-big-line {
+        border-top: 5px dashed #000;
+        margin: 15px auto;
+    }
+
+    .address-detail {
+        transform: scale(0.7, 0.7);
+        width: 290px;
+        margin-left: -43px;
+    }
+</style>
+</head>
+<body>
+<div class="container" style="width: 1400px;">
+    <div class="page-header">
+        <h1>Address List
+            <small> Print</small>
+        </h1>
+    </div>
+    <div class="panel panel-default" style="margin-bottom: 5px;">
+        <div class="panel-heading">查询条件</div>
+        <div class="panel-body">
+            <div class="form-inline">
+                <div class="form-group">
+                    <label>姓名</label>
+                    <input type="text" class="form-control" id="receiver" name="receiver" placeholder="姓名">
+                </div>
+                <div class="form-group">
+                    <label>电话</label>
+                    <input type="text" class="form-control" id="telephone" name="telephone" placeholder="电话">
+                </div>
+                <div class="form-group">
+                    <label>地址</label>
+                    <input type="text" class="form-control" id="detail" name="detail" placeholder="地址">
+                </div>
+                <div class="form-group">
+                    <input class="btn btn-primary" type="button" value="查询" onclick="search()">
+                    <a class="btn btn-default" href="/address/list">清空</a>
+                </div>
+                <input class="btn btn-primary pull-right" type="button" value="添加" onclick="toadd('')">
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-default" style="margin-bottom: 10px;">
+        <div class="panel-heading">打印设置</div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <select class="form-control" id="shipperCode">
+                            <option value="SF">顺丰</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <select class="form-control" id="quantity">
+                            <option value="1">1件</option>
+                            <option value="2">2件</option>
+                            <option value="3">3件</option>
+                            <option value="4">4件</option>
+                            <option value="5">5件</option>
+                            <option value="6">6件</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <select class="form-control" id="hangkong">
+                            <option value="1">陆运</option>
+                            <option value="2">航空</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <div class="form-group">
+                        <select class="form-control" id="type">
+                            <option value="电子产品">电子产品</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table id="table"></table>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="addressModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document" style="z-index: 100000; width: 1030px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">用户地址</h4>
+            </div>
+            <div class="modal-body">
+                <iframe name="result" id="result" marginheight="0" marginwidth="0" frameborder="0" style="width: 1000px; height: 550px; display: none;"
+                        scrolling="no" src="/address.html"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+<!--startprint-->
+<div id="printTemplate" class="pull-left" style="display: none; width: 203px; padding-left: 1px">
+    <p style="text-align: center">----顺丰留存----</p>
+    <h3 style="text-align: center">顺丰速运 95338</h3>
+    <div class="print-line"></div>
+    <div class="row">
+        <div class="print-barcode col-xs-9" style="padding-right: 0; margin-left: 20px; width: 150px;"></div>
+        <div class="col-xs-3 text-right" style="padding: 0; width: 90px">
+            <h4 id="leixing">&nbsp;顺丰次日</h4>
+            <h5 style="margin-left: 4px; margin-top: 5px;">目的地: <span id="originCode" style="font-size: 20px;"></span>
+            </h5>
+        </div>
+    </div>
+    <div class="print-line"></div>
+    <p class="shou1"></p>
+    <p class="shou2 address-detail"></p>
+    <div class="print-line" style="margin-top: 0;"></div>
+    <p>寄方：魏先生&nbsp;&nbsp;&nbsp;18914461889</p>
+    <p class="address-detail">江苏省南京市珠江路67号华丽国际大厦北门19楼1917</p>
+    <div class="print-line" style="margin-top: 0;"></div>
+    <div class="row">
+        <div class="col-xs-4" style="padding-right: 0px;">
+            <h4 class="fukuan">到付</h4>
+        </div>
+        <div class="col-xs-7" style="padding: 5px 0px 0px; text-align: center">
+            <p id="yuejiezhanghao" style="position: absolute;right: -20px;top: -5px;width: 160px;"></p>
+            <p id="feiyong2" style="margin-top: 10px;"></p>
+        </div>
+    </div>
+    <div class="print-line"></div>
+    <h5 style="margin-top: 10px;">收件员：</h5>
+    <div class="print-line"></div>
+    <h5 style="margin-top: 10px;">派件员：</h5>
+    <div class="print-line"></div>
+    <p class="today"></p>
+    <div class="print-line"></div>
+    <h4 style="margin-top: 10px;">收方签署：</h4>
+    <p>日期：</p>
+    <div class="print-line"></div>
+    <div class="print-big-line"></div>
+    <p style="text-align: center">----收方留存----</p>
+    <h3 style="text-align: center">顺丰速运 95338</h3>
+    <div class="print-line"></div>
+    <div class="row">
+        <div class="print-barcode col-xs-9" style="padding-right: 0; margin-left: 20px;"></div>
+        <div class="col-xs-3" style="padding: 0 0 0 15px; width: 100px;">
+            <h5>订单号：</h5>
+            <span></span>
+            <h4 class="fukuan">到付</h4>
+        </div>
+    </div>
+    <div class="print-line"></div>
+    <p class="shou1"></p>
+    <p class="shou2 address-detail"></p>
+    <div class="print-line" style="margin-top: 0;"></div>
+    <p>寄方：魏先生&nbsp;&nbsp;&nbsp;18914461889</p>
+    <p class="address-detail">江苏省南京市珠江路67号华丽国际大厦北门19楼1917</p>
+    <div class="print-line" style="margin-top: 0;"></div>
+    <h5 id="tuojiwu" style="margin: 5px 0;"></h5>
+    <div class="print-line"></div>
+    <h5 id="feiyong" style="margin: 5px 0;">保价费：2&nbsp;&nbsp;运费：12</h5>
+    <div class="print-line"></div>
+    <h5 id="heji" style="margin: 5px 0;">合计：14元</h5>
+    <div class="print-line"></div>
+    <p class="today"></p>
+</div>
+<!--endprint-->
+<div id="zheZhao" class="modal-backdrop fade hidden" style="color: #fff; text-align: center; "><br><br><br><br><br><br><br><br><br><br><br><h1>loading...</h1></div>
+</body>
+<script src="https://cdn.bootcss.com/jquery/1.10.1/jquery.min.js"></script>
+<script th:src="@{~/bootstrap.min.js}"></script>
+<script th:src="@{~/bootstrap-table.min.js}"></script>
+<script th:src="@{~/bootstrap-table-zh-CN.min.js}"></script>
+<script th:src="@{~/jquery-barcode.min.js}"></script>
+<script>
+    var allAddress = [];
+    var address = {};
+    var info;
+    var searchParams = {
+        receiver: '',
+        telephone: '',
+        detail: ''
+    };
+    $(function () {
+        // 如果有参数
+        $('#receiver').val(getUrlParam("receiver"));
+        $('#telephone').val(getUrlParam("telephone"));
+        $('#detail').val(getUrlParam("detail"));
+
+        $('#table').bootstrapTable({
+            url: "/address/pageList",
+            method: 'get',
+            striped: true,
+            dataType: "json",
+            pagination: true,
+            singleSelect: false,
+            pageSize: 10,
+            pageNumber: 1,
+            sidePagination: "server",
+            queryParams: function (params) {
+                return {
+                    limit: params.limit,
+                    offset: params.offset,
+                    receiver: $('#receiver').val(),
+                    telephone: $('#telephone').val(),
+                    detail: $('#detail').val(),
+                };
+            },
+            columns: [
+                {
+                    field: 'id',
+                    title: '#'
+                }, {
+                    field: 'receiver',
+                    title: '姓名'
+                }, {
+                    field: 'telephone',
+                    title: '电话'
+                }, {
+                    field: 'province',
+                    title: '省'
+                }, {
+                    field: 'city',
+                    title: '市'
+                }, {
+                    field: 'zone',
+                    title: '县'
+                }, {
+                    field: 'detail',
+                    title: '地址'
+                }, {
+                    field: 'id',
+                    title: '运费',
+                    align: 'center',
+                    width: 90,
+                    formatter: function (value, row, index) {
+                        return '<select id="yf' + row.id + '" class="form-control input-sm">\n' +
+                            '<option value="2">到付</option>' +
+                            '<option value="3">月结</option>' +
+                            '<option value="1">现付</option>' +
+                            '</select>';
+                    }
+                }, {
+                    field: 'id',
+                    title: '保价',
+                    align: 'center',
+                    width: 120,
+                    formatter: function (value, row, index) {
+                        return '<select id="bj' + row.id + '" class="form-control input-sm">\n' +
+                            '<option value="0">不保价</option>' +
+                            '<option value="2">2元保2000</option>' +
+                            '<option value="5">5元保5000</option>' +
+                            '<option value="10">10元保1W</option>' +
+                            '</select>';
+                    }
+                }, {
+                    field: 'id',
+                    title: '打印',
+                    align: 'center',
+                    formatter: function (value, row, index) {
+                        return '<button data-id="' + row.id + '" type="button" class="btn btn-default btn-xs do-print">打印</button>';
+                    }
+                }, {
+                    field: 'id',
+                    title: '',
+                    align: 'center',
+                    width: 90,
+                    formatter: function (value, row, index) {
+
+                        return '<button onclick="toadd(' + row.id + ')"  class="btn btn-default btn-xs" target="_blank">编辑</button>' +
+                            '<button onclick="dodelete(' + row.id + ')" class="btn btn-default btn-xs">删除</button>';
+                    }
+                }
+            ],
+            onLoadSuccess: function () {
+                allAddress = $('#table').bootstrapTable('getData');
+                searchParams = {
+                    receiver: $('#receiver').val(),
+                    telephone: $('#telephone').val(),
+                    detail: $('#detail').val()
+                }
+            }
+        });
+
+        $("#table").on("click", ".do-print", function () {
+            var id = $(this).data("id");
+            if (id) {
+                address = {};
+                for (var i = 0; i < allAddress.length; i++) {
+                    if (id == allAddress[i].id) {
+                        address = allAddress[i];
+                        break;
+                    }
+                }
+                if (address && address.id) {
+                    var obj = $(this);
+                    $(this).attr("disabled", true);
+                    // 生成电子面单
+                    createEorder($("#yf" + id).val(), $("#bj" + id).val(), id);
+                    setTimeout(function () {
+                        $(obj).attr("disabled", false);
+                    }, 2000);
+                }
+            }
+        });
+
+        $('#addressModal').on('hidden.bs.modal', function (e) {
+            $('#table').bootstrapTable('refresh');
+        });
+    });
+
+    function search() {
+        $('#table').bootstrapTable('refresh');
+    }
+
+    var payTypeArr = {
+        "1": "现付",
+        "2": "到付",
+        "3": "月结寄付",
+    };
+    var jzh = ["江苏省", "浙江省", "上海市", "上海"];
+
+    function createEorder(yf, bj, aid) {
+        // var payType = $("#payType").val();
+        // var baojia = $("#baojia").val();
+
+        var shipperCode = $("#shipperCode").val();
+        var quantity = $("#quantity").val();
+        var type = $("#type").val();
+        var hangkong = $("#hangkong").val();
+
+        // 是否可发航空
+        if (hangkong == '2' && !(jzh.indexOf(address.province) < 0 && address.province != "安徽省")) {
+            alert("目的地不能用航空");
+            return;
+        }
+
+        var payType = yf;
+        var baojia = bj;
+
+        // var shipperCode = "SF";
+        // var quantity = "1";
+        // var type = "电子产品";
+        // var hangkong = "1";
+
+        var monthCode = "0254127839";
+        if (payType != '3') {
+            monthCode = "";
+            $("#yuejiezhanghao").text("");
+        } else {
+            $("#yuejiezhanghao").text("月结账号：" + monthCode);
+        }
+
+        var data = {
+            id: address.id,
+            shipperCode: shipperCode,
+            payType: payType,
+            monthCode: monthCode,
+            goodsName: type,
+            goodsQuantity: quantity
+        }
+
+        $("#zheZhao").removeClass("hidden");
+        $("#zheZhao").addClass("in");
+        $.post("/eorder/create", data, function (d, s) {
+            $("#zheZhao").removeClass("in");
+            $("#zheZhao").addClass("hidden");
+            if (!d.code) {
+                info = d.data;
+                // 运单号
+                $("#yd" + aid).val(info.logisticCode);
+
+                // 填充打印内容
+                // 条形码
+                $(".print-barcode").barcode(info.logisticCode, "code128", {
+                    output: 'css',
+                    color: '#000',
+                    // barWidth: 1,
+                    barHeight: 35,
+                    addQuietZone: false
+                });
+                // 目的地代码
+                $("#originCode").text(info.originCode);
+                // 收件人
+                $(".shou1").html("收方：" + address.receiver + "&nbsp;&nbsp;&nbsp;" + address.telephone);
+                $(".shou2").html(address.province + address.city + address.zone + address.detail);
+                // 寄件日期
+                $(".today").text("寄件日期：" + info.today);
+                // 托寄物
+                $("#tuojiwu").html("托寄物：" + type + "&nbsp;&nbsp;数量：" + quantity);
+                // 付款方式
+                $(".fukuan").text(payTypeArr[payType]);
+                // 运费
+                countAmount(baojia, hangkong);
+
+                doPrint();
+            } else {
+                alert(d.message);
+            }
+        });
+    }
+
+    function countAmount(baojia, hangkong) {
+        var baseAmount = 12;
+
+        // 运费
+        $("#leixing").html("&nbsp;顺丰次日");
+        if (jzh.indexOf(address.province) < 0) {
+            if (address.province == "安徽省") {
+                // 江浙沪除外18
+                baseAmount = 14;
+            } else {
+                // 江浙沪除外18
+                baseAmount = 18;
+                $("#leixing").html("&nbsp;顺丰隔日");
+            }
+        }
+        if (hangkong == "2") {
+            baseAmount = 23;
+        }
+        baseAmount = parseInt(baseAmount);
+
+        // 保价
+        var totalAmount = baseAmount;
+        if (baojia != 0) {
+            totalAmount = (parseInt(baseAmount) + parseInt(baojia));
+            $("#feiyong").html("保价费：" + baojia + "&nbsp;&nbsp;运费：" + baseAmount);
+            $("#heji").html("合计：" + totalAmount + "元");
+        } else {
+            $("#feiyong").html("保价费：无保价&nbsp;&nbsp;运费：" + baseAmount);
+            $("#heji").html("合计：" + baseAmount + "元");
+        }
+        $("#feiyong2").html("运费：" + baseAmount + "&nbsp;&nbsp;合计：" + totalAmount);
+    }
+
+    function doPrint() {
+        $("#printTemplate").show();
+        bdhtml = window.document.body.innerHTML;
+        var oldHtml = bdhtml;
+        sprnstr = "<!--startprint-->";
+        eprnstr = "<!--endprint-->";
+        prnhtml = bdhtml.substr(bdhtml.indexOf(sprnstr) + 17);
+        prnhtml = prnhtml.substring(0, prnhtml.indexOf(eprnstr));
+        window.document.body.innerHTML = prnhtml;
+        window.print();
+        window.document.body.innerHTML = oldHtml;
+        $("#printTemplate").hide();
+
+        window.location.href = "/address/list?receiver=" +
+            encodeURIComponent(searchParams.receiver) + "&telephone=" +
+            encodeURIComponent(searchParams.telephone) + "&detail=" +
+            encodeURIComponent(searchParams.detail);
+    }
+
+    function toadd(id) {
+        $('#addressModal').modal('show');
+
+        var ifr = document.all("result");
+        $("#result").show();
+        window.result.location.href = ifr.src +"?id=" + id;
+    }
+
+    function dodelete(id) {
+        if (id && confirm("确定要删除吗")) {
+            $.post("/address/delete", {id: id}, function (d, s) {
+                if (!d.code) {
+                    $('#table').bootstrapTable('refresh');
+                }
+                alert(d.message);
+            });
+        }
+    }
+
+    function getUrlParam(name) {
+        var href = window.location.href;
+        if(href.indexOf("?") > 0){
+            var search = decodeURIComponent(href.substr(href.indexOf("?") + 1));
+
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+            var r = search.match(reg);
+
+            if (r != null)
+                return unescape(r[2]);
+        }
+        return null;
+    }
+</script>
+
+</html>

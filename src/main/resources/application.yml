@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    username: root
+    password: ab@4Qe4fert
+    url: jdbc:mysql://1.1.1.1/bladea?characterEncoding=utf-8&useSSL=false
+  jpa:
+    show-sql: true
+  jackson:
+    default-property-inclusion: non_null
+  thymeleaf:
+    prefix: classpath:/templates/
+    mode: LEGACYHTML5
+server:
+  port: 8088
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+  mapperLocations: classpath:mybatis/*.xml
+  typeAliasesPackage: com.example.demo.model
